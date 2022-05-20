@@ -1,0 +1,12 @@
+package config
+
+const (
+	MEMORY_SIZE          = 4096
+	PROGRAM_LOAD_ADDRESS = 0x200
+	V_MAXSIZE_REGISTERS  = 16
+	STACK_MAXSIZE        = 16 //Stack  size
+
+	WINDOW_WIDTH      = 64
+	WINDOW_HEIGHT     = 32
+	WINDOW_MULTIPLIER = 10
+)
