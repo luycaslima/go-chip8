@@ -3,14 +3,14 @@ package main
 import (
 	"go-chip8/config"
 	"go-chip8/emulator"
-	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 func main() {
 	chip8 := emulator.Chip8{}
-	chip8.Start("roms/INVADERS")
+	chip8.Start("roms/PONG") //Path to the game
+	chip8.Speed = 15
 
 	//SDL BASIC INITIALIZATION
 	err := sdl.Init(sdl.INIT_EVERYTHING)
@@ -19,6 +19,7 @@ func main() {
 	}
 	defer sdl.Quit()
 
+	//INIT WINDOW
 	window, err := sdl.CreateWindow("GO! Chip8", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(config.WIDTH*config.SCREEN_MULTIPLIER),
 		int32(config.HEIGHT*config.SCREEN_MULTIPLIER), sdl.WINDOW_SHOWN)
 	if err != nil {
@@ -26,13 +27,24 @@ func main() {
 	}
 	defer window.Destroy()
 
+	//INIT RENDERER
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
 	if err != nil {
 		panic(err)
 	}
 	defer renderer.Destroy()
 
-	for {
+	//FPS
+	var fps uint64
+	fps = 60
+	var delay uint64
+	delay = 1000 / fps
+
+	var frameStart uint64
+
+	running := true
+	for running {
+		frameStart = sdl.GetTicks64()
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
@@ -46,6 +58,7 @@ func main() {
 						chip8.KeyDown(int(vkey))
 					}
 					if key == sdl.K_ESCAPE {
+						running = false
 						return
 					}
 
@@ -79,22 +92,24 @@ func main() {
 		}
 		renderer.Present()
 
-		//TODO Separate this in a gofunc?
 		//timers
 		if chip8.DT > 0 {
 			chip8.DT = chip8.DT - 1
 
 		}
-
 		if chip8.ST > 0 {
 			chip8.ST = chip8.ST - 1
-			//Soltar um som aqui
+			//Beep sound here
+		}
+		//LIMIT THE NUMBER OF OPCODES PER FRAME
+		for i := 0; i < chip8.Speed; i++ {
+			//OPCODE EXECUTION
+			chip8.GenerateOpCode()
 		}
 
-		//Execução dos comandos aqui
-		chip8.GenerateOpCode()
-
-		//TODO try use getTicks
-		time.Sleep(time.Microsecond * 16700) //60hz
+		frameTime := sdl.GetTicks64() - frameStart
+		if frameTime < delay {
+			sdl.Delay(uint32(delay - frameTime))
+		}
 	}
 }

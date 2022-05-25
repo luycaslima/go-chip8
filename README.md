@@ -6,7 +6,6 @@ This is a rough adaptation of https://github.com/nibblebits/Chip8InCCourse in Go
 
 TODO:
 - [ ] Sound
-- [ ] Separate the Emulation Cycle from the SDL
 - [ ] UI ?
-- [ ] Improve Framerate
+- [X] Improve Framerate (Check if has better solutions)
 - [ ] Correct the Wait Key Event (0xF00A)
