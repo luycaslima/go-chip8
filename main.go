@@ -1,97 +1,100 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
 	"go-chip8/config"
 	"go-chip8/emulator"
-	"os"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-const winWidth, winHeight int = 160, 144 //Native 160x144 640, 576
-
-func loadGame(path string) ([]byte, error) {
-	infile, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer infile.Close()
-
-	stats, statsErr := infile.Stat() //retornada a estrutura e detalhes de um arquivo se houver algum problema retorna patherror
-	if statsErr != nil {
-		return nil, statsErr
-	}
-
-	size := stats.Size() //tamanho em bytes do arquivo
-	bytes := make([]byte, size)
-
-	bufr := bufio.NewReader(infile)
-	_, err = bufr.Read(bytes)
-	return bytes, err
-}
-
 func main() {
 	chip8 := emulator.Chip8{}
-	chip8.Registers.SP = 0
+	chip8.Start("roms/INVADERS")
 
-	chip8.PushStack(0xff)
-	chip8.PushStack(0xaa)
-
-	fmt.Printf("%x\n", chip8.PopStack())
-	fmt.Printf("%x\n", chip8.PopStack())
-
-	//fmt.Println("byteArray: ", rom)
-	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+	//SDL BASIC INITIALIZATION
+	err := sdl.Init(sdl.INIT_EVERYTHING)
+	if err != nil {
 		panic(err)
 	}
-	defer sdl.Quit() //defer chama essa função ao fim do main
+	defer sdl.Quit()
 
-	//WINDOW
-	window, err := sdl.CreateWindow("GO! Chip8", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(config.WINDOW_WIDTH*config.WINDOW_MULTIPLIER), int32(config.WINDOW_HEIGHT*config.WINDOW_MULTIPLIER), sdl.WINDOW_SHOWN) //retorna multiplas coisas
+	window, err := sdl.CreateWindow("GO! Chip8", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(config.WIDTH*config.SCREEN_MULTIPLIER),
+		int32(config.HEIGHT*config.SCREEN_MULTIPLIER), sdl.WINDOW_SHOWN)
 	if err != nil {
 		panic(err)
 	}
 	defer window.Destroy()
 
-	//RENDER
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	if err != nil {
-		panic(err) //Encerra o programa e retorna o erro gerado
-	}
-	defer renderer.Destroy()
-
-	//Texture
-	tex, err := renderer.CreateTexture(sdl.PIXELFORMAT_ABGR8888, sdl.TEXTUREACCESS_STREAMING, int32(winWidth), int32(winHeight)) //TODO: Ver oq sao essas flags
 	if err != nil {
 		panic(err)
 	}
-	defer tex.Destroy()
+	defer renderer.Destroy()
 
-	pixels := make([]byte, winWidth*winHeight*4) //Mutltiplicado por 4 pois cada pixel armaze 4 bytes(um para alpha e os outros pro RGB)
-
-	var frameStart time.Time
-	var elapsedTime float32
 	for {
-		frameStart = time.Now()
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
+			switch t := event.(type) {
 			case *sdl.QuitEvent:
-				fmt.Println("Quit")
 				return
+			case *sdl.KeyboardEvent:
+				switch t.State {
+				case sdl.PRESSED:
+					key := t.Keysym.Sym
+					vkey := chip8.CheckMappedKeys(key)
+					if vkey != 1 {
+						chip8.KeyDown(int(vkey))
+					}
+					if key == sdl.K_ESCAPE {
+						return
+					}
+
+				case sdl.RELEASED:
+					key := t.Keysym.Sym
+					vkey := chip8.CheckMappedKeys(key)
+					if vkey != 1 {
+						chip8.KeyUp(int(vkey))
+					}
+
+				}
 			}
 		}
-		tex.Update(nil, pixels, winWidth*4) //pitch é basicamente quantos bytes tem o width da janela
-		renderer.Copy(tex, nil, nil)
+
+		renderer.SetDrawColor(0, 0, 0, 0)
+		renderer.Clear()
+		renderer.SetDrawColor(255, 255, 255, 0) //seta a cor do q for desenhado na tela (Rect, Line, e Clear)
+
+		//Desenhar os pixels na tela
+		for x := 0; x < config.WIDTH; x++ {
+			for y := 0; y < config.HEIGHT; y++ {
+				if chip8.IsScreenSet(x, y) {
+					var r sdl.Rect
+					r.X = int32(x * config.SCREEN_MULTIPLIER)
+					r.Y = int32(y * config.SCREEN_MULTIPLIER)
+					r.W = int32(config.SCREEN_MULTIPLIER)
+					r.H = int32(config.SCREEN_MULTIPLIER)
+					renderer.FillRect(&r)
+				}
+			}
+		}
 		renderer.Present()
 
-		elapsedTime = float32(time.Since(frameStart).Seconds())
-		if elapsedTime < .005 {
-			sdl.Delay(5 - uint32(elapsedTime*1000.0))
-			elapsedTime = float32(time.Since(frameStart).Seconds())
-		}
-	}
+		//TODO Separate this in a gofunc?
+		//timers
+		if chip8.DT > 0 {
+			chip8.DT = chip8.DT - 1
 
+		}
+
+		if chip8.ST > 0 {
+			chip8.ST = chip8.ST - 1
+			//Soltar um som aqui
+		}
+
+		//Execução dos comandos aqui
+		chip8.GenerateOpCode()
+
+		//TODO try use getTicks
+		time.Sleep(time.Microsecond * 16700) //60hz
+	}
 }
