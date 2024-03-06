@@ -27,18 +27,18 @@ Next, type the path to your game and then the game will execute.
 
 Chip 8's Keys diagram
 
-1	2	3	C
-4	5	6	D
-7	8	9	E
-A	0	B	F
+1	2	3	C  
+4	5	6	D  
+7	8	9	E  
+A	0	B	F  
 
 
 Mapped at the keyboard
 
-1	2	3	4
-Q	W	E	R
-A	S	D	F
-Z	X	C	V
+1	2	3	4  
+Q	W	E	R  
+A	S	D	F  
+Z	X	C	V  
 
 ---
 
