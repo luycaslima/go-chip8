@@ -26,17 +26,17 @@ type Keyboard struct {
 	Keys [16]bool
 }
 
-//Make the virtual key released false on the MappedKeys
+// Make the virtual key released false on the MappedKeys
 func (keyboard *Keyboard) KeyUp(key int) {
 	keyboard.Keys[key] = false
 }
 
-//Make the virtual key released true on the MappedKeys
+// Make the virtual key released true on the MappedKeys
 func (keyboard *Keyboard) KeyDown(key int) {
 	keyboard.Keys[key] = true
 }
 
-//Return if the key is still pressed or not
+// Return if the key is still pressed or not
 func (keyboard *Keyboard) KeyIsPressed(keyIndex int) bool {
 	return keyboard.Keys[keyIndex]
 }

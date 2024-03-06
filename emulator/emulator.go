@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"go-chip8/config"
 	k "go-chip8/keyboard"
-	"io/ioutil"
 	"math/rand"
+	"os"
 )
 
-//FONT Characters  in hexadecimal
+// FONT Characters  in hexadecimal
 var DefaultCharacterSet = [...]byte{
 	0xf0, 0x90, 0x90, 0x90, 0xf0,
 	0x20, 0x60, 0x20, 0x20, 0x70,
@@ -69,7 +69,7 @@ func (ch8 *Chip8) Start(romPath string) {
 }
 
 func (ch8 *Chip8) loadRom(path string) {
-	rom, err := ioutil.ReadFile(path)
+	rom, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func (ch8 *Chip8) loadRom(path string) {
 	copy(ch8.Memory[config.PROGRAM_LOAD_ADDRESS:], rom) //Load the array of bytes at the 0x200 position of the memory
 }
 
-//Check if the pixel of the Screen is lit or not
+// Check if the pixel of the Screen is lit or not
 func (ch8 *Chip8) IsScreenSet(x, y int) bool {
 	return ch8.Screen[x][y]
 }
@@ -247,7 +247,6 @@ func (ch8 *Chip8) executeOpCode() error {
 		case 0x07: //LD Vx, DT Set Vx = delay timer value.
 			ch8.V[ch8.x] = ch8.DT
 		case 0x0A: // LD Vx, K Wait for a key press, store the value of the key in Vx.
-			//TODO usar função waikeyevent
 			pressedKey := ch8.WaitKeyEvent()
 			ch8.V[ch8.x] = pressedKey
 		case 0x15: //Fx15 - LD DT, Vx Set delay timer = Vx.

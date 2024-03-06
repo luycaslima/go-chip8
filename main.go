@@ -1,15 +1,29 @@
 package main
 
 import (
+	"bufio"
 	"go-chip8/config"
 	"go-chip8/emulator"
+	"log"
+	"os"
+	"strings"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 func main() {
 	chip8 := emulator.Chip8{}
-	chip8.Start("roms/PONG") //Path to the game
+	reader := bufio.NewReader(os.Stdin)
+
+	println("Enter the Rom Path: ")
+	path, initErr := reader.ReadString('\n')
+
+	if initErr != nil {
+		log.Fatal("Invalid Path!" + initErr.Error())
+	}
+	path = strings.TrimSuffix(path, "\n")
+
+	chip8.Start(path) //Path to the game
 	chip8.Speed = 15
 
 	//SDL BASIC INITIALIZATION
@@ -54,9 +68,10 @@ func main() {
 				case sdl.PRESSED:
 					key := t.Keysym.Sym
 					vkey := chip8.CheckMappedKeys(key)
-					if vkey != 1 {
+					if vkey != -1 {
 						chip8.KeyDown(int(vkey))
 					}
+
 					if key == sdl.K_ESCAPE {
 						running = false
 						return
@@ -65,7 +80,7 @@ func main() {
 				case sdl.RELEASED:
 					key := t.Keysym.Sym
 					vkey := chip8.CheckMappedKeys(key)
-					if vkey != 1 {
+					if vkey != -1 {
 						chip8.KeyUp(int(vkey))
 					}
 
@@ -75,9 +90,9 @@ func main() {
 
 		renderer.SetDrawColor(0, 0, 0, 0)
 		renderer.Clear()
-		renderer.SetDrawColor(255, 255, 255, 0) //seta a cor do q for desenhado na tela (Rect, Line, e Clear)
+		renderer.SetDrawColor(255, 255, 255, 0)
 
-		//Desenhar os pixels na tela
+		//Draw the pixels on the screen
 		for x := 0; x < config.WIDTH; x++ {
 			for y := 0; y < config.HEIGHT; y++ {
 				if chip8.IsScreenSet(x, y) {
